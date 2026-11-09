@@ -1,0 +1,96 @@
+# Outbreak Ledger module: DRC weekly epidemiological profile (multi-disease)
+# Source family: INSP / Direction de Controle des Maladies slide deck presented
+# to the weekly Comite National de Coordination, exported to PDF.
+# One report covers many diseases: each table row is routed to its own event.
+
+module: drc_insp_weekly_profile
+family_label: "DRC INSP weekly epidemiological profile (multi-disease)"
+fingerprint: ['profil epidemiologique', 'semaine epidemiologique\s*\d+']
+disease: multi
+default_country: drc
+report_sequence: consecutive    # one profile per epidemiological week
+event_rules:
+  - match: row
+    country: drc
+    system: idsr_weekly_profile
+    table_groups: [disease_table, narrative]
+    title: "{disease} surveillance, DRC (INSP weekly profile)"
+
+issuer_patterns:
+  INSP-RDC: 'direction de controle des maladies'
+
+period: weekly
+week_convention: mmwr        # Sunday to Saturday; week 41 of 2026 ends 17 October 2026
+coverage_level: national
+
+metadata_patterns:
+  report_no: 'semaine epidemiologique\s*(\d+)'
+  epi_week: 'semaine epidemiologique\s*(\d+)'
+  epi_year: 'reunion du\s*\d{1,2}(?:er)? [a-z]+ (\d{4})'
+  publication_date: 'reunion du\s*(\d{1,2}(?:er)? [a-z]+ \d{4})'
+
+geography:
+  total_labels: ["total"]
+
+labels: {}
+
+table_adapters:
+  # "Situation epidemiologique en RDC": one row per disease, three weekly
+  # periods (cases, deaths, case fatality) and the year-to-date cumulative.
+  - name: disease_table
+    type: disease_rows_text
+    start_marker: "situation epidemiologique en rdc"
+    end_marker: "sources"
+    period_header_pattern: 'sem\s*(\d+)'
+    values_per_period: 3      # cases, deaths, case fatality ratio (ratio not extracted)
+    geo: "drc"
+    rows:
+      "cholera":            {disease: cholera,        classification: idsr_notified}
+      "coqueluche":         {disease: pertussis,      classification: idsr_notified}
+      "covid-19":           {disease: covid19,        classification: idsr_notified}
+      "deces maternels":    {disease: maternal_death, classification: idsr_notified}
+      "diarr sanglante":    {disease: bloody_diarrhoea, classification: idsr_notified}
+      "diarrhee dhy m5":    {disease: diarrhoea_dehydration_u5, classification: idsr_notified}
+      "fha":                {disease: haemorrhagic_fever_syndrome, classification: idsr_notified}
+      "fievre jaune":       {disease: yellow_fever,   classification: idsr_notified}
+      "fievre typhoide":    {disease: typhoid,        classification: idsr_notified}
+      "grippe":             {disease: influenza_like_illness, classification: idsr_notified}
+      "ira":                {disease: acute_respiratory_infection, classification: idsr_notified}
+      "meningite":          {disease: meningitis,     classification: idsr_notified}
+      "mpox":               {disease: mpox,           classification: idsr_notified}
+      "paludisme susp":     {disease: malaria,        classification: suspected}
+      "paludisme conf":     {disease: malaria,        classification: confirmed}
+      "pfa":                {disease: acute_flaccid_paralysis, classification: idsr_notified}
+      "rage":               {disease: rabies,         classification: idsr_notified}
+      "rougeole":           {disease: measles,        classification: idsr_notified}
+      "tnn":                {disease: neonatal_tetanus, classification: idsr_notified}
+      "paludisme":          {disease: malaria,        classification: unspecified_label}
+      "paludisme tdr":      {disease: malaria,        classification: rdt_positive}
+      "pneumonie":          {disease: pneumonia,      classification: idsr_notified}
+    meaning_source: "Slide 'Situation epidemiologique en RDC': columns Cas, Deces per SEM; last column group SEM1-S = year to date"
+
+# Figures stated in slide text ({N} is a count, with optional thousands spaces).
+# Patterns are matched against normalized text (no accents or punctuation). They are kept as separate claims with their
+# own classification and are never merged with the table.
+narrative_claims:
+  - pattern: '(?P<cases>{N}) cas suspects? contre (?P<prev_cases>{N}) cas au se ?(?P<prev_week>\d+)'
+    disease_from: section
+    fields:
+      cases: {indicator: cases, classification: suspected, count_type: new, week: current}
+      prev_cases: {indicator: cases, classification: suspected, count_type: new, week: prev_week}
+  - pattern: 's(?P<week>\d+)-(?P<year>\d{4}) (?P<cases>{N}) cas (?P<deaths>{N}) deces'
+    disease_from: section
+    fields:
+      cases: {indicator: cases, classification: suspected, count_type: new, week: week}
+      deaths: {indicator: deaths, classification: suspected, count_type: new, week: week}
+
+qualitative:
+  page_title_lines: 2          # each slide title names its section (and often its disease)
+  bullets: ["\u2756", "\u2022", "\u25aa", "\u27a2", "\uf0b7", "\u2751", "-"]
+  skip_patterns: ['^sources? ', 'des donnees fiables pour des decisions', 'republique democratique du congo', 'ministere de la sante', 'direction de controle des maladies', 'institut national', 'hygiene et prevoyance sociale', '^de sante publique', 'profil epidemiologique', 'presentee lors de la reunion', '^de la r d c', '^\d{1,2}(?: \d{1,2})?$']
+
+rules:
+  jump_factor: 3
+  jump_min_value: 50
+  cumulative_jump_factor: 5
+  cumulative_jump_min: 1000

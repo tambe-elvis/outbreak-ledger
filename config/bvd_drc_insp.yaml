@@ -1,0 +1,93 @@
+# Outbreak Ledger module: 17th Ebola (Bundibugyo virus) epidemic, DRC
+# Source family: daily INSP / COUSP situation reports ("SitRep N.../MVE-BDBV/...")
+# Labels are matched after normalization (lowercase, accents removed,
+# punctuation replaced by spaces).
+
+module: bvd_drc_insp
+disease: BVD
+
+family_label: "DRC INSP daily Ebola (BVD) situation report"
+fingerprint: ['sitrep n\s*\d+\s*mve', 'institut national de sante publique']
+indicators: [new_confirmed]
+default_country: drc
+report_sequence: consecutive    # SitRep numbers advance by one per reporting day
+episode_pattern: '(\d+)\s*e epidemie de la maladie a virus ebola'
+event_rules:
+  - match: document
+    disease: BVD
+    country: drc
+    title: "Ebola (Bundibugyo virus) epidemic no {episode}, DRC"
+
+period: daily              # one reporting day per report: start = end = reporting date
+coverage_level: province   # level at which "not reported" is tracked
+
+issuer_patterns:
+  INSP-RDC: 'institut national de sante publique'
+
+metadata_patterns:
+  report_no: 'sitrep n\s*(\d+)\s*mve'
+  reporting_date: 'date de rapportage\s*:?\s*(\d{1,2}(?:er)? [a-z]+ \d{4})'
+  publication_date: 'date de publication\s*:?\s*(\d{1,2}(?:er)? [a-z]+ \d{4})'
+
+geography:
+  provinces: ["ituri", "nord-kivu", "nord kivu", "haut-uele", "haut uele", "tshopo", "sud-kivu", "sud kivu",
+              "bas-uele", "bas uele", "sud ubangi", "sud-ubangi", "nord ubangi", "nord-ubangi"]
+  total_labels: ["total", "total general"]
+  total_geo: drc            # the Total row is the national figure for the DRC
+  total_level: national
+  unallocated_labels: ["a ventiler"]
+
+labels:
+  "nouveaux cas confirmes 24h": {indicator: cases,  classification: confirmed, count_type: new}
+  "cas confirmes":              {indicator: cases,  classification: confirmed, count_type: cumulative}
+  "deces confirmes":            {indicator: deaths, classification: confirmed, count_type: cumulative}
+
+# Columns deliberately not extracted (derived ratios or composite text).
+ignore_labels: ["letalite", "zones de sante touchees"]
+
+table_adapters:
+  # Tableau 1: one row per province, header row near the top.
+  - name: province_table
+    type: header
+    geo_column_labels: ["province"]
+    geo_level: province
+
+  # Tableau 2: provinces and health zones, multi-row header, merged cells,
+  # names wrapped over lines, continues across pages without repeating the
+  # header. Read line by line from the text layer: the first two values of
+  # each row are the cumulative columns, followed by the case fatality ratio.
+  - name: hz_table
+    type: positional_text
+    start_marker: "tableau 2"
+    geo_level: health_zone
+    fields:
+      - {indicator: cases,  classification: confirmed, count_type: cumulative}
+      - {indicator: deaths, classification: confirmed, count_type: cumulative}
+    field_labels: ["Nombre cumulatif: Cas (n)", "Nombre cumulatif: Deces (n)"]
+    meaning_source: "Table caption: 'Repartition des cas et deces confirmes par province et zone'"
+
+# Adjustment statements: magnitude may be unstated. Geography is taken from
+# province names found in the statement or its immediate context.
+adjustment_patterns:
+  - 'harmonisation des donnees[^.]{0,250}'
+  - 'ajustements? des donnees[^.]{0,200}'
+
+qualitative:
+  heading_patterns: ['^(\d+(?:\.\d+){1,3})\.?\s*([A-Za-z\u00c0-\u00ff].{2,90})$']
+  section_types:
+    "defis": challenge
+    "principales actions": action
+    "faits saillants": highlight
+    "resume des points cles": highlight
+    "recommandations": recommendation
+    "messages cles": key_message
+    "chronologie des faits cles": background
+  summary_start_patterns: ['^aucune nouvelle zone de sante n a ete touchee', '^au cours des dernieres 24 heures \d+ nouveaux cas confirmes ont ete notifies']
+  clause_split: ";"
+  skip_patterns: ['^sources? ', 'task force presidentielle', 'systeme de gestion de l incident', 'ministere de la sante', 'contact www', 'e-mail', 'directeur general de l insp', 'incident manager', 'numero vert', '^www']
+
+rules:
+  jump_factor: 5
+  jump_min_value: 10
+  cumulative_jump_factor: 5     # flag a cumulative increase > factor x previous increase
+  cumulative_jump_min: 50

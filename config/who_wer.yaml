@@ -1,0 +1,58 @@
+# Outbreak Ledger module: WHO Weekly Epidemiological Record (WER), English.
+# Mostly qualitative: signals assessed, published products and narrative
+# assessments. Counts stated in prose are kept as narrative claims.
+
+module: who_wer
+family_label: "WHO Weekly Epidemiological Record"
+fingerprint: ['weekly epidemiological', 'who int wer']
+disease: multi
+event_rules:
+  - match: evidence_lookup      # narrative counts join an existing event only on stated disease and country
+
+issuer_patterns:
+  WHO: 'weekly epidemiological'
+
+period: weekly
+week_convention: iso         # Monday to Sunday; week 41 of 2026 is 5 to 11 October
+coverage_level: national
+
+metadata_patterns:
+  report_no: 'no\s+(\d+)\s+\d{4}\s+\d+\s+\d+'
+  epi_week: 'during epidemiological week\s*(\d+)'
+  epi_year: 'no\s+\d+\s+(\d{4})\s+\d+'
+  publication_date: 'who int wer\s+(\d{1,2} [a-z]+ \d{4})'
+
+geography:
+  total_labels: ["total"]
+
+labels: {}
+table_adapters: []
+
+signals_table:
+  header_words: ["Region", "Hazard"]
+  region_col_max_x: 190
+  max_band_height: 140
+  none_phrase: "no publicly available signals identified"
+  caveat: "Absence of listed signals means no publicly available signals were identified; it does not imply absence of signal activity (WER footnote)."
+
+products_section:
+  start: "published information products"
+  categories: ["rapid risk assessment", "disease outbreak news", "risk assessment"]
+  stop_patterns: ['^global respiratory', '^selected weekly events', '^figure']
+
+narrative_claims:
+  - pattern: 'as of (?P<date>\d{1,2} [a-z]+ \d{4}) [^.]{0,200}? a total of (?P<cases>{N}) confirmed cases and (?P<deaths>{N}) confirmed deaths'
+    disease_from: sentence      # disease and country must be named in the sentence or its section heading
+    country_from: sentence
+    fields:
+      cases: {indicator: cases, classification: confirmed, count_type: cumulative, as_of: date}
+      deaths: {indicator: deaths, classification: confirmed, count_type: cumulative, as_of: date}
+
+qualitative:
+  contents_titles: true        # article titles from the contents column become sections
+  skip_patterns: ['weekly epidemiological record no', '^figure \d', 'http', '^contents$', '^\d+$']
+  footnote_pattern: '^\d{1,2}\s+[A-Z]'
+
+rules:
+  jump_factor: 5
+  jump_min_value: 10

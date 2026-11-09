@@ -1,0 +1,38 @@
+# Test-only report family for the v0.5 acceptance tests (synthetic data).
+module: acceptance_test
+family_label: "Acceptance test situation report"
+fingerprint: ['acceptance test situation report']
+disease: cholera
+period: daily
+coverage_level: province
+default_country: testland
+report_sequence: consecutive
+episode_pattern: 'cholera outbreak no (\d+)'
+event_rules:
+  - match: document
+    disease: cholera
+    country: testland
+    title: "Cholera outbreak no {episode}, Testland"
+metadata_patterns:
+  report_no: 'acceptance test situation report no (\d+)'
+  reporting_date: 'reporting date (\d{4}-\d{2}-\d{2})'
+  publication_date: 'publication date (\d{4}-\d{2}-\d{2})'
+  issuer: 'issuer ([a-z0-9-]+)'
+geography:
+  provinces: ["alpha", "beta"]
+  total_labels: ["total"]
+  total_geo: testland
+  total_level: national
+labels:
+  "new confirmed cases": {indicator: cases, classification: confirmed, count_type: new}
+  "cumulative confirmed cases": {indicator: cases, classification: confirmed, count_type: cumulative}
+  "cumulative suspected cases": {indicator: cases, classification: suspected, count_type: cumulative}
+table_adapters:
+  - name: province_table
+    type: header
+    geo_column_labels: ["province"]
+    geo_level: province
+revision_patterns:
+  - 'revises the cumulative confirmed cases in (?P<geo>[a-z]+) from (?P<old>\d+) to (?P<new>\d+)'
+qualitative: {}
+rules: {jump_factor: 50, jump_min_value: 100000, cumulative_jump_factor: 50, cumulative_jump_min: 100000}

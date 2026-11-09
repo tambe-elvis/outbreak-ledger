@@ -1,0 +1,3 @@
+*.bat text eol=crlf
+*.pdf binary
+docs/example/*.json text eol=lf

@@ -1,0 +1,77 @@
+# Outbreak Ledger module for the SYNTHETIC demo corpus (samples/)
+# Labels are matched after normalization (lowercase, accents removed,
+# punctuation replaced by spaces). Every label maps to an explicit meaning.
+# A label with any "unknown" field is extracted as a candidate but flagged
+# for human review instead of being treated as comparable data.
+
+module: synthetic_demo
+# These cumulative counts describe the outbreak as of the reporting date.
+cumulative_period: snapshot
+family_label: "Synthetic demonstration corpus"
+fingerprint: ['(?:donnees synthetiques|synthetic data)']
+default_country: demo_country
+event_rules:
+  - match: document
+    disease: BVD
+    country: demo_country
+    title: "Synthetic demonstration outbreak"
+disease: BVD
+
+geography:
+  column_labels: ["zone de sante", "zs", "health zone"]
+  level: health_zone
+  total_labels: ["total", "total general", "grand total"]
+
+metadata_patterns:
+  report_no: '(?:rapport de situation|situation report)\s+no\s+(\d+)'
+  period: '(?:periode|period)\s*:?\s*(\d{4}-\d{2}-\d{2})\s+(?:au|to)\s+(\d{4}-\d{2}-\d{2})'
+  publication_date: '(?:date de publication|publication date)\s*:?\s*(\d{4}-\d{2}-\d{2})'
+  issuer: '(?:emetteur|issuer)\s*:?\s*([a-z0-9-]+)'
+
+labels:
+  # French
+  "nouveaux cas confirmes":       {indicator: cases,  classification: confirmed,   count_type: new}
+  "cas confirmes cumules":        {indicator: cases,  classification: confirmed,   count_type: cumulative}
+  "confirmes nouveaux":           {indicator: cases,  classification: confirmed,   count_type: new}
+  "confirmes cumul":              {indicator: cases,  classification: confirmed,   count_type: cumulative}
+  "deces cumules":                {indicator: deaths, classification: unspecified, count_type: cumulative}
+  "deces":                        {indicator: deaths, classification: unspecified, count_type: unknown}
+  "probables":                    {indicator: cases,  classification: probable,    count_type: unknown}
+  # English
+  "new confirmed cases":          {indicator: cases,  classification: confirmed,   count_type: new}
+  "cumulative confirmed cases":   {indicator: cases,  classification: confirmed,   count_type: cumulative}
+  "deaths among confirmed cases cumulative": {indicator: deaths, classification: confirmed, count_type: cumulative}
+
+# Narrative statements are kept as source-linked context for human
+# interpretation. They never feed indicators automatically.
+revision_patterns:
+  - 'le cumul des cas confirmes de la zs (?P<geo>[a-z]+) a ete revise de (?P<old>\d+) a (?P<new>\d+)'
+  - 'cumulative confirmed cases in (?P<geo>[a-z]+) (?:were|was) revised from (?P<old>\d+) to (?P<new>\d+)'
+
+context_topics:
+  insecurity: ["insecurite", "insecurity", "securite"]
+  lab_backlog: ["backlog", "arriere", "en attente d analyse"]
+  stockout: ["rupture de stock", "stock-out", "stockout"]
+  community_resistance: ["resistance communautaire", "community resistance", "refus"]
+  contact_followup: ["suivi des contacts", "contact follow-up", "contact tracing"]
+
+context_state_cues:
+  denied: ["aucune", "aucun", "pas de", "no reported", "none reported"]
+  resolved: ["a repris", "resumed", "resolu", "resolved", "levee", "amelioration"]
+
+rules:
+  jump_factor: 5          # flag if a new count exceeds previous by this factor
+  jump_min_value: 10      # ... and is at least this large
+
+
+# Cover lines describe the report. Keep them out of response statements.
+qualitative:
+  skip_patterns:
+    - '^rapport de situation no '
+    - '^external situation report no '
+    - '^emetteur '
+    - '^issuer '
+    - '^periode '
+    - '^period '
+    - '^date de publication '
+    - '^publication date '

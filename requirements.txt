@@ -1,0 +1,6 @@
+# Versions used for the local pilot checks (Python 3.12).
+pdfplumber==0.11.10
+pypdfium2==5.14.0
+reportlab==5.1.0
+PyYAML==6.0.3
+pytest==9.2.0
